@@ -1,0 +1,65 @@
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: meetings_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  # ── PostgreSQL Web Interface (Adminer) ───────────────────────
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── FastAPI Backend ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/meetings_db
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - WHISPER_MODEL_SIZE=${WHISPER_MODEL_SIZE:-base}
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - FAISS_INDEX_PATH=data/faiss_index
+    volumes:
+      - ./backend/uploads:/app/uploads       # Persist uploaded audio files
+      - backend_data:/app/data               # Persist FAISS index
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── React Frontend ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_data:
