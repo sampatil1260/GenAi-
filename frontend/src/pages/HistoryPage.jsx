@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getMeetings } from "../api/client";
+import { useTheme } from "../context/ThemeContext";
+import AnimatedBackground from "../components/3d/AnimatedBackground";
 import {
   Search, Clock, ChevronRight, ChevronLeft, CheckCircle, Loader2,
   AlertCircle, CalendarDays, FileText, CheckSquare, Filter,
@@ -18,6 +20,8 @@ const statusConfig = {
 };
 
 export default function HistoryPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,23 +57,26 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 bg-surface-700/50 rounded-xl animate-pulse" />
-        <div className="glass-card h-96 animate-pulse" />
+        <div className={`h-8 w-48 rounded-xl animate-pulse ${isDark ? "bg-surface-700/50" : "bg-surface-light-200"}`} />
+        <div className={`glass-card h-96 animate-pulse`} />
       </div>
     );
   }
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-6 relative"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      {/* 3D Animated Background */}
+      <AnimatedBackground variant="grid" className="opacity-30" />
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Meeting History</h1>
-        <p className="text-gray-400 mt-1.5">Browse and search all your processed meetings.</p>
+        <h1 className={`text-3xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>Meeting History</h1>
+        <p className={`mt-1.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Browse and search all your processed meetings.</p>
       </motion.div>
 
       {/* Filters */}
@@ -116,7 +123,9 @@ export default function HistoryPage() {
         transition={{ delay: 0.2, duration: 0.5 }}
       >
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/[0.06] text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <div className={`hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b text-xs font-semibold uppercase tracking-wider ${
+          isDark ? "border-white/[0.06] text-gray-500" : "border-surface-light-300/40 text-gray-400"
+        }`}>
           <div className="col-span-3">Meeting Name</div>
           <div className="col-span-2">Date</div>
           <div className="col-span-2">Transcript</div>
@@ -129,12 +138,12 @@ export default function HistoryPage() {
         {/* Rows */}
         {paginated.length === 0 ? (
           <div className="p-12 text-center">
-            <Search className="h-10 w-10 mx-auto mb-3 text-gray-600" />
-            <p className="text-gray-400 font-medium">No meetings found</p>
-            <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filters.</p>
+            <Search className={`h-10 w-10 mx-auto mb-3 ${isDark ? "text-gray-600" : "text-gray-300"}`} />
+            <p className={`font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}>No meetings found</p>
+            <p className={`text-sm mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>Try adjusting your search or filters.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-white/[0.04]">
+          <ul className={`divide-y ${isDark ? "divide-white/[0.04]" : "divide-surface-light-200"}`}>
             {paginated.map((m) => {
               const cfg = statusConfig[m.status] || statusConfig.uploaded;
               const StatusIcon = cfg.icon;
@@ -142,24 +151,26 @@ export default function HistoryPage() {
                 <li key={m.id}>
                   <Link
                     to={`/meeting/${m.id}`}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center px-6 py-4 hover:bg-white/[0.03] transition-all duration-200 group"
+                    className={`grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center px-6 py-4 transition-all duration-200 group ${
+                      isDark ? "hover:bg-white/[0.03]" : "hover:bg-accent/[0.03]"
+                    }`}
                   >
                     {/* Name */}
                     <div className="md:col-span-3">
-                      <p className="text-sm font-semibold text-gray-100 truncate group-hover:text-accent transition-colors">
+                      <p className={`text-sm font-semibold truncate group-hover:text-accent transition-colors ${isDark ? "text-gray-100" : "text-gray-800"}`}>
                         {m.title}
                       </p>
                     </div>
 
                     {/* Date */}
-                    <div className="md:col-span-2 flex items-center gap-1.5 text-xs text-gray-500">
+                    <div className={`md:col-span-2 flex items-center gap-1.5 text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                       <CalendarDays className="h-3 w-3 hidden md:block" />
                       {new Date(m.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                     </div>
 
                     {/* Transcript preview */}
                     <div className="md:col-span-2">
-                      <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                      <p className={`text-xs truncate flex items-center gap-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                         <FileText className="h-3 w-3 flex-shrink-0 hidden md:block" />
                         {m.transcript ? m.transcript.slice(0, 50) + "..." : "—"}
                       </p>
@@ -167,13 +178,13 @@ export default function HistoryPage() {
 
                     {/* Summary preview */}
                     <div className="md:col-span-2">
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className={`text-xs truncate ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                         {m.summary?.summary ? m.summary.summary.slice(0, 50) + "..." : "—"}
                       </p>
                     </div>
 
                     {/* Tasks count */}
-                    <div className="md:col-span-1 flex items-center gap-1 text-xs text-gray-400">
+                    <div className={`md:col-span-1 flex items-center gap-1 text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                       <CheckSquare className="h-3 w-3 hidden md:block" />
                       {m.action_items?.length || 0}
                     </div>
@@ -188,7 +199,7 @@ export default function HistoryPage() {
 
                     {/* Arrow */}
                     <div className="md:col-span-1 flex justify-end">
-                      <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className={`h-4 w-4 group-hover:text-accent group-hover:translate-x-0.5 transition-all ${isDark ? "text-gray-600" : "text-gray-300"}`} />
                     </div>
                   </Link>
                 </li>
@@ -199,17 +210,17 @@ export default function HistoryPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-white/[0.06]">
-            <p className="text-xs text-gray-500">
+          <div className={`flex items-center justify-between px-6 py-3 border-t ${isDark ? "border-white/[0.06]" : "border-surface-light-200"}`}>
+            <p className={`text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-1.5 rounded-lg hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className={`p-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${isDark ? "hover:bg-white/[0.06]" : "hover:bg-gray-100"}`}
               >
-                <ChevronLeft className="h-4 w-4 text-gray-400" />
+                <ChevronLeft className={`h-4 w-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).slice(
                 Math.max(0, page - 3), Math.min(totalPages, page + 2)
@@ -218,7 +229,7 @@ export default function HistoryPage() {
                   key={p}
                   onClick={() => setPage(p)}
                   className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
-                    p === page ? "bg-accent/15 text-accent" : "text-gray-500 hover:bg-white/[0.06]"
+                    p === page ? "bg-accent/15 text-accent" : isDark ? "text-gray-500 hover:bg-white/[0.06]" : "text-gray-400 hover:bg-gray-100"
                   }`}
                 >
                   {p}
@@ -227,9 +238,9 @@ export default function HistoryPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-1.5 rounded-lg hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className={`p-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${isDark ? "hover:bg-white/[0.06]" : "hover:bg-gray-100"}`}
               >
-                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <ChevronRight className={`h-4 w-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
               </button>
             </div>
           </div>

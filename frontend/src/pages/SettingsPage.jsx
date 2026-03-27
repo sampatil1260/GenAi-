@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import TiltCard from "../components/3d/TiltCard";
+import AnimatedBackground from "../components/3d/AnimatedBackground";
 import {
   User, Lock, Mail, Calendar, CheckCircle, AlertCircle, Save, Eye, EyeOff, Shield,
 } from "lucide-react";
 
 export default function SettingsPage() {
   const { user, updateProfile } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   // Profile
   const [name, setName] = useState(user?.name || "");
@@ -63,15 +67,18 @@ export default function SettingsPage() {
 
   return (
     <motion.div
-      className="space-y-8 max-w-2xl mx-auto"
+      className="space-y-8 max-w-2xl mx-auto relative"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      {/* 3D Animated Background */}
+      <AnimatedBackground variant="gradient" className="opacity-30" />
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Settings</h1>
-        <p className="text-gray-400 mt-1.5">Manage your profile and account preferences.</p>
+        <h1 className={`text-3xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>Settings</h1>
+        <p className={`mt-1.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Manage your profile and account preferences.</p>
       </motion.div>
 
       {/* ── Account Info ────────────────────────────────────── */}
@@ -87,17 +94,17 @@ export default function SettingsPage() {
           Account Information
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-surface-900/50 rounded-xl p-4 border border-white/[0.04]">
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+          <div className={`rounded-xl p-4 border ${isDark ? "bg-surface-900/50 border-white/[0.04]" : "bg-surface-light-100/50 border-surface-light-300/30"}`}>
+            <div className={`flex items-center gap-2 text-xs mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               <Mail className="h-3 w-3" /> EMAIL
             </div>
-            <p className="text-sm text-gray-200 font-medium">{user?.email}</p>
+            <p className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-700"}`}>{user?.email}</p>
           </div>
-          <div className="bg-surface-900/50 rounded-xl p-4 border border-white/[0.04]">
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+          <div className={`rounded-xl p-4 border ${isDark ? "bg-surface-900/50 border-white/[0.04]" : "bg-surface-light-100/50 border-surface-light-300/30"}`}>
+            <div className={`flex items-center gap-2 text-xs mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               <Calendar className="h-3 w-3" /> MEMBER SINCE
             </div>
-            <p className="text-sm text-gray-200 font-medium">
+            <p className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-700"}`}>
               {user?.createdAt
                 ? new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                 : "—"}
@@ -122,7 +129,7 @@ export default function SettingsPage() {
         </h2>
         <form onSubmit={handleProfileSave} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Display Name</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>Display Name</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <input
@@ -167,7 +174,7 @@ export default function SettingsPage() {
         <form onSubmit={handlePasswordSave} className="space-y-4">
           {/* Current */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Current Password</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>Current Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <input
@@ -190,7 +197,7 @@ export default function SettingsPage() {
 
           {/* New */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">New Password</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>New Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <input
@@ -206,7 +213,7 @@ export default function SettingsPage() {
 
           {/* Confirm */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Confirm New Password</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>Confirm New Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <input

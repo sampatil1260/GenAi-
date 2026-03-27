@@ -1,38 +1,80 @@
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 const PARTICLE_COUNT = 120;
+
+/* Shared cursor state */
+const cursorState = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
+function CursorListener() {
+  useEffect(() => {
+    const onMove = (e) => {
+      cursorState.targetX = (e.clientX / window.innerWidth) * 2 - 1;
+      cursorState.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
+  useFrame(() => {
+    cursorState.x += (cursorState.targetX - cursorState.x) * 0.04;
+    cursorState.y += (cursorState.targetY - cursorState.y) * 0.04;
+  });
+
+  return null;
+}
 
 function Particles() {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const particles = useMemo(() => {
-    return Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: (Math.random() - 0.5) * 16,
-      y: (Math.random() - 0.5) * 10,
+    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+      baseX: (Math.random() - 0.5) * 16,
+      baseY: (Math.random() - 0.5) * 10,
       z: (Math.random() - 0.5) * 8 - 2,
       speedX: (Math.random() - 0.5) * 0.002,
       speedY: (Math.random() - 0.5) * 0.002,
       scale: 0.02 + Math.random() * 0.04,
+      // Unique per-particle float params
+      floatPhase: Math.random() * Math.PI * 2,
+      floatAmpX: 0.2 + Math.random() * 0.4,
+      floatAmpY: 0.15 + Math.random() * 0.3,
+      floatFreqX: 0.2 + Math.random() * 0.3,
+      floatFreqY: 0.3 + Math.random() * 0.25,
+      pulseFreq: 0.4 + Math.random() * 0.8,
     }));
   }, []);
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (!meshRef.current) return;
+    const t = clock.getElapsedTime();
+
     particles.forEach((p, i) => {
-      p.x += p.speedX;
-      p.y += p.speedY;
+      // Continuous drift
+      p.baseX += p.speedX;
+      p.baseY += p.speedY;
 
       // Wrap around
-      if (p.x > 8) p.x = -8;
-      if (p.x < -8) p.x = 8;
-      if (p.y > 5) p.y = -5;
-      if (p.y < -5) p.y = 5;
+      if (p.baseX > 8) p.baseX = -8;
+      if (p.baseX < -8) p.baseX = 8;
+      if (p.baseY > 5) p.baseY = -5;
+      if (p.baseY < -5) p.baseY = 5;
 
-      dummy.position.set(p.x, p.y, p.z);
-      dummy.scale.setScalar(p.scale);
+      // Sine/cosine floating motion (continuous)
+      const floatX = Math.sin(t * p.floatFreqX + p.floatPhase) * p.floatAmpX;
+      const floatY = Math.cos(t * p.floatFreqY + p.floatPhase) * p.floatAmpY;
+
+      // Cursor influence
+      const cx = cursorState.x * 0.25;
+      const cy = cursorState.y * 0.25;
+
+      // Scale pulse
+      const pulse = 1 + Math.sin(t * p.pulseFreq + p.floatPhase) * 0.15;
+
+      dummy.position.set(p.baseX + floatX + cx, p.baseY + floatY + cy, p.z);
+      dummy.scale.setScalar(p.scale * pulse);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
     });
@@ -49,7 +91,7 @@ function Particles() {
 
 /**
  * ParticleField — Instanced particle system as R3F background.
- * Renders slowly drifting luminous particles.
+ * Continuously drifting + floating + pulsing, with cursor parallax.
  */
 export default function ParticleField({ className = "" }) {
   return (
@@ -60,6 +102,7 @@ export default function ParticleField({ className = "" }) {
         style={{ background: "transparent" }}
         gl={{ alpha: true, antialias: false }}
       >
+        <CursorListener />
         <Particles />
       </Canvas>
     </div>

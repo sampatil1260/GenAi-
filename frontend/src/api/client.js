@@ -1,14 +1,38 @@
 /**
  * Axios API client — centralizes all backend communication.
+ * Automatically attaches JWT token from localStorage to all requests.
  */
 import axios from "axios";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000/api/v1";
 
+const TOKEN_KEY = "ami_token";
+
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 300000, // 5 min — audio processing can be slow
 });
+
+// ── Interceptor — attach JWT to every request ───────────────────
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ── Auth ────────────────────────────────────────────────────────
+
+export const loginUser = async (email, password) => {
+  const response = await api.post("/auth/login", { email, password });
+  return response.data;
+};
+
+export const signupUser = async (name, email, password) => {
+  const response = await api.post("/auth/signup", { name, email, password });
+  return response.data;
+};
 
 // ── Meetings ────────────────────────────────────────────────────
 

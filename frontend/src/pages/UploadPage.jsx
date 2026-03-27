@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
 import { uploadMeeting } from "../api/client";
+import { useTheme } from "../context/ThemeContext";
 import TiltCard from "../components/3d/TiltCard";
+import AnimatedBackground from "../components/3d/AnimatedBackground";
 import {
   Upload, Loader2, CheckCircle, AlertCircle, Video, FileText, Lightbulb,
   CheckSquare, ChevronDown, ChevronUp, User, Flag,
@@ -17,6 +19,8 @@ const priorityStyles = {
 
 export default function UploadPage() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -98,15 +102,18 @@ export default function UploadPage() {
 
   return (
     <motion.div
-      className="space-y-8 max-w-3xl mx-auto"
+      className="space-y-8 max-w-3xl mx-auto relative"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      {/* 3D Animated Background */}
+      <AnimatedBackground variant="particles" className="opacity-40" />
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Upload Meeting</h1>
-        <p className="text-gray-400 mt-1.5">Upload an audio or video recording and let AI extract insights.</p>
+        <h1 className={`text-3xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>Upload Meeting</h1>
+        <p className={`mt-1.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Upload an audio or video recording and let AI extract insights.</p>
       </motion.div>
 
       {/* Upload Card — wrapped in TiltCard */}
@@ -116,11 +123,11 @@ export default function UploadPage() {
         transition={{ delay: 0.1, duration: 0.5 }}
       >
         <TiltCard tiltIntensity={6} className="group">
-          <div className="glass-card p-6">
+          <div className={`glass-card p-6 ${status === "uploading" ? "shimmer-border" : ""}`}>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Title */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Meeting Title</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>Meeting Title</label>
             <input
               id="upload-title-input"
               type="text"
@@ -135,7 +142,7 @@ export default function UploadPage() {
 
           {/* Dropzone */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Recording File</label>
+            <label className={`text-sm font-medium mb-2 block ${isDark ? "text-gray-300" : "text-gray-600"}`}>Recording File</label>
             <div
               {...getRootProps()}
               className={`group relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
@@ -143,7 +150,9 @@ export default function UploadPage() {
                   ? "border-accent bg-accent/5 scale-[1.01]"
                   : file
                   ? "border-emerald-500/40 bg-emerald-500/5"
-                  : "border-white/[0.08] hover:border-accent/40 hover:bg-accent/5"
+                  : isDark
+                  ? "border-white/[0.08] hover:border-accent/40 hover:bg-accent/5"
+                  : "border-surface-light-300/60 hover:border-accent/40 hover:bg-accent/5"
               } ${status === "uploading" ? "pointer-events-none opacity-60" : ""}`}
             >
               <input {...getInputProps()} />
@@ -156,7 +165,7 @@ export default function UploadPage() {
                   </p>
                 </div>
               ) : (
-                <div className="text-gray-500 group-hover:text-gray-300 transition-colors">
+                <div className={`transition-colors ${isDark ? "text-gray-500 group-hover:text-gray-300" : "text-gray-400 group-hover:text-gray-600"}`}>
                   <Video className="h-10 w-10 mx-auto mb-3 group-hover:text-accent transition-colors" />
                   <p className="font-semibold text-lg">Drop your video or audio file here</p>
                   <p className="text-sm mt-1">MP4, MKV, MOV, AVI, WAV, MP3, M4A — up to 100 MB</p>
@@ -173,10 +182,10 @@ export default function UploadPage() {
               className="space-y-2"
             >
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">{progress}</span>
+                <span className={isDark ? "text-gray-300" : "text-gray-600"}>{progress}</span>
                 <span className="text-accent font-mono text-xs">{progressPct}%</span>
               </div>
-              <div className="h-2 bg-surface-700 rounded-full overflow-hidden">
+              <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-surface-700" : "bg-surface-light-200"}`}>
                 <motion.div
                   className="h-full bg-gradient-to-r from-accent to-blue-500 rounded-full"
                   initial={{ width: "0%" }}
@@ -262,8 +271,9 @@ export default function UploadPage() {
               iconBg="bg-yellow-500/15"
               isOpen={showSummary}
               onToggle={() => setShowSummary(!showSummary)}
+              isDark={isDark}
             >
-              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+              <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                 {result.summary?.summary || "Summary not available."}
               </p>
             </CollapsibleSection>
@@ -275,15 +285,16 @@ export default function UploadPage() {
               iconBg="bg-emerald-500/15"
               isOpen={showTasks}
               onToggle={() => setShowTasks(!showTasks)}
+              isDark={isDark}
             >
               {result.action_items?.length > 0 ? (
                 <div className="space-y-2">
                   {result.action_items.map((task, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-surface-900/50 rounded-xl p-3 border border-white/[0.04]">
+                    <div key={i} className={`flex items-center gap-3 rounded-xl p-3 border ${isDark ? "bg-surface-900/50 border-white/[0.04]" : "bg-surface-light-100/50 border-surface-light-300/30"}`}>
                       <div className="p-1.5 rounded-lg bg-accent/10"><User className="h-3 w-3 text-accent" /></div>
-                      <span className="text-sm font-semibold text-white">{task.assignee}</span>
+                      <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-800"}`}>{task.assignee}</span>
                       <span className="text-gray-600 text-sm">→</span>
-                      <p className="text-sm text-gray-300 flex-1">{task.task}</p>
+                      <p className={`text-sm flex-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>{task.task}</p>
                       <span className={`badge text-[11px] ${priorityStyles[task.priority] || priorityStyles.medium}`}>
                         <Flag className="h-3 w-3" />{task.priority}
                       </span>
@@ -302,9 +313,10 @@ export default function UploadPage() {
               iconBg="bg-accent/15"
               isOpen={showTranscript}
               onToggle={() => setShowTranscript(!showTranscript)}
+              isDark={isDark}
             >
-              <div className="bg-surface-900/60 rounded-xl p-4 border border-white/[0.04] max-h-[400px] overflow-y-auto">
-                <p className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed font-light">
+              <div className={`rounded-xl p-4 border max-h-[400px] overflow-y-auto ${isDark ? "bg-surface-900/60 border-white/[0.04]" : "bg-surface-light-100/60 border-surface-light-300/30"}`}>
+                <p className={`whitespace-pre-wrap text-sm leading-relaxed font-light ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                   {result.transcript || "Transcript not available."}
                 </p>
               </div>
@@ -312,7 +324,7 @@ export default function UploadPage() {
 
             {/* Actions */}
             <div className="flex gap-3">
-              <button onClick={handleReset} className="btn-ghost border border-white/[0.08]">
+              <button onClick={handleReset} className={`btn-ghost border ${isDark ? "border-white/[0.08]" : "border-surface-light-300/40"}`}>
                 Upload Another
               </button>
               <button
@@ -329,17 +341,17 @@ export default function UploadPage() {
   );
 }
 
-function CollapsibleSection({ title, icon, iconBg, isOpen, onToggle, children }) {
+function CollapsibleSection({ title, icon, iconBg, isOpen, onToggle, isDark, children }) {
   return (
     <div className="glass-card overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-white/[0.02] transition-colors"
+        className={`w-full flex items-center gap-2.5 px-6 py-4 transition-colors ${isDark ? "hover:bg-white/[0.02]" : "hover:bg-gray-50"}`}
       >
         <div className={`p-2 rounded-lg ${iconBg}`}>{icon}</div>
-        <span className="text-sm font-bold text-white">{title}</span>
+        <span className={`text-sm font-bold ${isDark ? "text-white" : "text-gray-800"}`}>{title}</span>
         <div className="ml-auto">
-          {isOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+          {isOpen ? <ChevronUp className={`h-4 w-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} /> : <ChevronDown className={`h-4 w-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />}
         </div>
       </button>
       <AnimatePresence>

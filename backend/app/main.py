@@ -12,8 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base
-from app.api.routes import upload, meetings, search
+from app.api.routes import upload, meetings, search, auth
 from app.services.embeddings import EmbeddingService
+
+# Ensure all models are imported so Base.metadata.create_all picks them up
+from app.models.user import User          # noqa
+from app.models.meeting import Meeting    # noqa
 
 # ── Structured Logging ──────────────────────────────────────────
 logging.basicConfig(
@@ -62,6 +66,7 @@ app.add_middleware(
 )
 
 # ── Register API routers ────────────────────────────────────────
+app.include_router(auth.router,     prefix="/api/v1", tags=["Auth"])
 app.include_router(upload.router,   prefix="/api/v1", tags=["Upload"])
 app.include_router(meetings.router, prefix="/api/v1", tags=["Meetings"])
 app.include_router(search.router,   prefix="/api/v1", tags=["Search"])

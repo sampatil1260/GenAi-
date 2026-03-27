@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, Clock, Calendar, Loader2 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import MeetingDetail from "../components/MeetingDetail";
 import TaskList from "../components/TaskList";
 import { getMeeting, getMeetingSummary, deleteMeeting } from "../api/client";
@@ -11,6 +12,8 @@ import { getMeeting, getMeetingSummary, deleteMeeting } from "../api/client";
 export default function MeetingView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [meeting, setMeeting] = useState(null);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +49,7 @@ export default function MeetingView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <div className="flex items-center gap-3 text-gray-400">
+        <div className={`flex items-center gap-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
           <Loader2 className="h-5 w-5 animate-spin text-accent" />
           Loading meeting...
         </div>
@@ -56,7 +59,7 @@ export default function MeetingView() {
 
   if (!meeting) {
     return (
-      <div className="text-center py-32 text-gray-500">Meeting not found.</div>
+      <div className={`text-center py-32 ${isDark ? "text-gray-500" : "text-gray-400"}`}>Meeting not found.</div>
     );
   }
 
@@ -68,15 +71,15 @@ export default function MeetingView() {
           <button
             id="back-to-dashboard-btn"
             onClick={() => navigate("/")}
-            className="p-2 rounded-xl hover:bg-white/[0.06] transition-colors"
+            className={`p-2 rounded-xl transition-colors ${isDark ? "hover:bg-white/[0.06]" : "hover:bg-gray-100"}`}
           >
-            <ArrowLeft className="h-5 w-5 text-gray-400" />
+            <ArrowLeft className={`h-5 w-5 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
           </button>
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
+            <h1 className={`text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>
               {meeting.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-gray-500 mt-1.5">
+            <div className={`flex items-center gap-4 text-sm mt-1.5 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
                 {new Date(meeting.created_at).toLocaleDateString("en-US", {

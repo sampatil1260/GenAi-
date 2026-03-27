@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # ── Database ─────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/meetings_db"
 
+    # ── JWT Auth ─────────────────────────────────────────────────
+    JWT_SECRET_KEY: str = "ami-super-secret-key-change-in-production"
+
     # ── LLM Provider (OpenAI or Google Gemini) ───────────────────
     LLM_PROVIDER: str = "openai"  # "openai" or "gemini"
     OPENAI_API_KEY: str = ""

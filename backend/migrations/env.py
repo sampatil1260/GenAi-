@@ -10,7 +10,8 @@ from alembic import context
 
 from app.config import get_settings
 from app.database import Base
-from app.models.meeting import Meeting, ActionItem  # noqa — ensure models are imported
+from app.models.user import User                     # noqa — ensure User model is imported
+from app.models.meeting import Meeting, ActionItem   # noqa — ensure models are imported
 
 config = context.config
 

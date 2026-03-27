@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { User, Mail, Lock, UserPlus, Sparkles, Eye, EyeOff } from "lucide-react";
 import FloatingShapes from "../components/3d/FloatingShapes";
 import ParticleField from "../components/3d/ParticleField";
@@ -10,6 +11,8 @@ import CursorGlow from "../components/3d/CursorGlow";
 
 export default function SignUpPage() {
   const { signup } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,10 +37,11 @@ export default function SignUpPage() {
     setError("");
     setLoading(true);
     try {
-      signup(name.trim(), email.trim().toLowerCase(), password);
+      await signup(name.trim(), email.trim().toLowerCase(), password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message);
+      const msg = err.response?.data?.detail || err.message || "Failed to create account";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -45,31 +49,26 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4">
-      {/* ── 3D Background Layers ─────────────────────────── */}
+      {/* ── Background Layers ─────────────────────────── */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-surface-950" />
+        <div className={`absolute inset-0 ${isDark ? "bg-surface-950" : "bg-surface-light-50"}`} />
         <motion.div
-          className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-purple-600/20 to-accent/10 blur-3xl"
+          className={`absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full blur-3xl ${isDark ? "bg-gradient-to-bl from-purple-600/20 to-accent/10" : "bg-gradient-to-bl from-purple-400/10 to-accent/5"}`}
           animate={{ x: [0, -30, 0], y: [0, 40, 0] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-[-20%] left-[-5%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-blue-500/15 to-emerald-500/8 blur-3xl"
+          className={`absolute bottom-[-20%] left-[-5%] w-[500px] h-[500px] rounded-full blur-3xl ${isDark ? "bg-gradient-to-tr from-blue-500/15 to-emerald-500/8" : "bg-gradient-to-tr from-blue-400/8 to-emerald-400/4"}`}
           animate={{ x: [0, 25, 0], y: [0, -20, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
-      {/* 3D Floating shapes */}
       <FloatingShapes count={8} className="-z-5" />
-
-      {/* Particle field */}
       <ParticleField className="-z-5 opacity-60" />
+      <CursorGlow size={600} color={isDark ? "rgba(124,92,252,0.08)" : "rgba(124,92,252,0.04)"} />
 
-      {/* Cursor glow */}
-      <CursorGlow size={600} color="rgba(124,92,252,0.08)" />
-
-      {/* ── Signup Card with 3D Tilt ─────────────────────── */}
+      {/* ── Signup Card ─────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -77,7 +76,11 @@ export default function SignUpPage() {
         className="w-full max-w-md"
       >
         <TiltCard tiltIntensity={8} className="group">
-          <div className="bg-surface-800/50 backdrop-blur-2xl border border-white/[0.08] rounded-3xl shadow-2xl shadow-black/40 p-8">
+          <div className={`backdrop-blur-2xl border rounded-3xl shadow-2xl p-8 ${
+            isDark
+              ? "bg-surface-800/50 border-white/[0.08] shadow-black/40"
+              : "bg-white/70 border-surface-light-300/40 shadow-accent/5"
+          }`}>
             {/* Logo */}
             <motion.div
               className="flex flex-col items-center mb-8"
@@ -90,8 +93,8 @@ export default function SignUpPage() {
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-extrabold text-white tracking-tight">Create Account</h1>
-              <p className="text-gray-400 text-sm mt-1">Join Meeting Intelligence — powered by AI</p>
+              <h1 className={`text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>Create Account</h1>
+              <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Join Meeting Intelligence — powered by AI</p>
             </motion.div>
 
             {/* Error */}
@@ -139,7 +142,7 @@ export default function SignUpPage() {
                 <div className="flex gap-1">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                      password.length >= i * 3 ? i <= 1 ? "bg-red-500" : i <= 2 ? "bg-amber-400" : i <= 3 ? "bg-blue-400" : "bg-emerald-400" : "bg-white/[0.06]"
+                      password.length >= i * 3 ? i <= 1 ? "bg-red-500" : i <= 2 ? "bg-amber-400" : i <= 3 ? "bg-blue-400" : "bg-emerald-400" : isDark ? "bg-white/[0.06]" : "bg-surface-light-200"
                     }`} />
                   ))}
                 </div>
@@ -157,12 +160,12 @@ export default function SignUpPage() {
             </form>
 
             <div className="flex items-center gap-4 my-6">
-              <div className="flex-1 h-px bg-white/[0.06]" />
-              <span className="text-xs text-gray-500 uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-white/[0.06]" />
+              <div className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-surface-light-300/40"}`} />
+              <span className={`text-xs uppercase tracking-wider ${isDark ? "text-gray-500" : "text-gray-400"}`}>or</span>
+              <div className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-surface-light-300/40"}`} />
             </div>
 
-            <p className="text-center text-sm text-gray-400">
+            <p className={`text-center text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Already have an account?{" "}
               <Link to="/login" className="text-accent hover:text-accent-light font-semibold transition-colors">
                 Sign in instead

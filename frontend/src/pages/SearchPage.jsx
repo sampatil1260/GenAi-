@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { searchMeetings } from "../api/client";
 import { Link } from "react-router-dom";
-import FloatingShapes from "../components/3d/FloatingShapes";
+import { useTheme } from "../context/ThemeContext";
+import AnimatedBackground from "../components/3d/AnimatedBackground";
 import {
   Search, Send, Sparkles, User, Loader2, MessageSquare, FileSearch,
 } from "lucide-react";
@@ -15,6 +16,8 @@ const examplePrompts = [
 ];
 
 export default function SearchPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +70,7 @@ export default function SearchPage() {
 
   return (
     <motion.div
-      className="flex flex-col h-[calc(100vh-8rem)]"
+      className="flex flex-col h-[calc(100vh-8rem)] relative"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
@@ -76,21 +79,21 @@ export default function SearchPage() {
       <div className="flex-1 overflow-y-auto space-y-6 pb-4 px-1">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center relative">
-            {/* 3D floating shapes in background */}
-            <FloatingShapes count={5} className="opacity-30" />
+            {/* Enhanced 3D background */}
+            <AnimatedBackground variant="particles" className="opacity-30" />
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-accent/20 rounded-3xl blur-2xl" />
+                <div className="absolute inset-0 bg-accent/20 rounded-3xl blur-2xl animate-glow-pulse" />
                 <div className="relative bg-gradient-to-br from-accent to-blue-500 p-5 rounded-3xl">
                   <MessageSquare className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h2 className="text-2xl font-extrabold text-white mb-2">Search Your Meetings</h2>
-              <p className="text-gray-400 max-w-md mb-8">
+              <h2 className={`text-2xl font-extrabold mb-2 ${isDark ? "text-white" : "text-gray-800"}`}>Search Your Meetings</h2>
+              <p className={`max-w-md mb-8 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                 Ask anything about your past meetings — powered by AI semantic search. Your conversations are processed to give you intelligent answers.
               </p>
 
@@ -103,7 +106,7 @@ export default function SearchPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + i * 0.1 }}
                     onClick={() => { setInput(prompt); handleSearch(prompt); }}
-                    className="glass-card-hover p-3 text-left text-sm text-gray-300 hover:text-white transition-colors"
+                    className={`glass-card-hover p-3 text-left text-sm transition-colors ${isDark ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-800"}`}
                   >
                     <span className="text-accent mr-1.5">→</span>
                     {prompt}
@@ -147,7 +150,7 @@ export default function SearchPage() {
                         : "glass-card"
                     }`}>
                       <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
-                        msg.isError ? "text-red-400" : "text-gray-200"
+                        msg.isError ? "text-red-400" : isDark ? "text-gray-200" : "text-gray-700"
                       }`}>
                         {msg.content}
                       </p>
@@ -157,7 +160,7 @@ export default function SearchPage() {
                   {/* Sources */}
                   {msg.role === "ai" && msg.sources?.length > 0 && (
                     <div className="mt-3 ml-11 space-y-2">
-                      <p className="text-xs text-gray-500 font-semibold flex items-center gap-1">
+                      <p className={`text-xs font-semibold flex items-center gap-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                         <FileSearch className="h-3 w-3" /> Sources ({msg.sources.length})
                       </p>
                       {msg.sources.slice(0, 3).map((s, i) => (
@@ -168,9 +171,9 @@ export default function SearchPage() {
                         >
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-accent font-semibold">{s.meeting_title}</span>
-                            <span className="text-gray-500 font-mono">{(s.similarity_score * 100).toFixed(1)}%</span>
+                            <span className={`font-mono ${isDark ? "text-gray-500" : "text-gray-400"}`}>{(s.similarity_score * 100).toFixed(1)}%</span>
                           </div>
-                          <p className="text-gray-400 line-clamp-2">{s.relevant_chunk}</p>
+                          <p className={`line-clamp-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}>{s.relevant_chunk}</p>
                         </Link>
                       ))}
                     </div>
@@ -201,7 +204,7 @@ export default function SearchPage() {
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-gray-500 ml-2">Searching meetings...</span>
+                    <span className={`text-xs ml-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}>Searching meetings...</span>
                   </div>
                 </div>
               </motion.div>
@@ -213,7 +216,7 @@ export default function SearchPage() {
       </div>
 
       {/* Input bar */}
-      <div className="border-t border-white/[0.06] pt-4 mt-auto">
+      <div className={`border-t pt-4 mt-auto ${isDark ? "border-white/[0.06]" : "border-surface-light-300/40"}`}>
         <form onSubmit={handleSubmit} className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />

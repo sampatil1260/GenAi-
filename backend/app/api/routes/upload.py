@@ -16,7 +16,9 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.database import get_db
 from app.models.meeting import Meeting, ActionItem
+from app.models.user import User
 from app.schemas.meeting import MeetingResponse
+from app.api.auth_deps import get_current_user
 from app.services.transcription import TranscriptionService
 from app.services.summarization import SummarizationService
 from app.services.task_extraction import TaskExtractionService
@@ -33,18 +35,11 @@ async def upload_meeting(
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload an audio or video file and process it through the full AI pipeline.
-
-    Steps:
-      1. Validate file type and size
-      2. Save file to disk
-      3. Extract audio (if video) and transcribe with Whisper
-      4. Summarize with LLM
-      5. Extract action items with LLM
-      6. Generate embeddings and store in FAISS
-      7. Persist everything to PostgreSQL
+    Meeting is associated with the authenticated user.
     """
     # ── 1. Validate file extension ───────────────────────────────
     ext = os.path.splitext(file.filename)[1].lower()
@@ -69,8 +64,13 @@ async def upload_meeting(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # ── 3. Create meeting record ─────────────────────────────────
-    meeting = Meeting(title=title, audio_file_path=file_path, status="transcribing")
+    # ── 3. Create meeting record (scoped to current user) ────────
+    meeting = Meeting(
+        title=title,
+        audio_file_path=file_path,
+        status="transcribing",
+        user_id=current_user.id,
+    )
     db.add(meeting)
     db.commit()
     db.refresh(meeting)
@@ -116,6 +116,7 @@ async def upload_meeting(
             meeting_id=str(meeting.id),
             meeting_title=meeting.title,
             text=transcript_result["text"],
+            user_id=str(current_user.id),
         )
 
         meeting.status = "completed"

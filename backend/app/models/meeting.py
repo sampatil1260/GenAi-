@@ -18,6 +18,10 @@ class Meeting(Base):
     __tablename__ = "meetings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True, index=True,
+    )
     title = Column(String(500), nullable=False)
     audio_file_path = Column(String(1000), nullable=True)
     transcript = Column(Text, nullable=True)
@@ -34,6 +38,7 @@ class Meeting(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    owner = relationship("User", back_populates="meetings")
     action_items = relationship(
         "ActionItem", back_populates="meeting", cascade="all, delete-orphan"
     )

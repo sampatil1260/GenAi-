@@ -1,17 +1,58 @@
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
 
-/** A single rotating wireframe shape */
-function Shape({ geometry, position, color, speed = 0.3, floatSpeed = 1 }) {
-  const meshRef = useRef();
+/* Shared cursor state for cursor influence */
+const cursorState = { x: 0, y: 0, targetX: 0, targetY: 0 };
 
-  useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x += delta * speed * 0.5;
-      meshRef.current.rotation.y += delta * speed;
-    }
+function CursorListener() {
+  useEffect(() => {
+    const onMove = (e) => {
+      cursorState.targetX = (e.clientX / window.innerWidth) * 2 - 1;
+      cursorState.targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
+  useFrame(() => {
+    cursorState.x += (cursorState.targetX - cursorState.x) * 0.04;
+    cursorState.y += (cursorState.targetY - cursorState.y) * 0.04;
+  });
+
+  return null;
+}
+
+/** A single rotating wireframe shape with continuous + cursor animation */
+function Shape({ geometry, position, color, speed = 0.3, floatSpeed = 1, index = 0 }) {
+  const meshRef = useRef();
+  const phase = useMemo(() => index * 1.3, [index]);
+
+  useFrame(({ clock }, delta) => {
+    if (!meshRef.current) return;
+    const t = clock.getElapsedTime();
+
+    // Continuous rotation (always running)
+    meshRef.current.rotation.x += delta * speed * 0.5;
+    meshRef.current.rotation.y += delta * speed;
+
+    // Continuous floating orbit
+    const floatX = Math.sin(t * 0.4 + phase) * 0.3;
+    const floatY = Math.cos(t * 0.3 + phase) * 0.25;
+    const floatZ = Math.sin(t * 0.2 + phase) * 0.15;
+
+    // Cursor influence — subtle parallax
+    const cursorPushX = cursorState.x * 0.2;
+    const cursorPushY = cursorState.y * 0.15;
+
+    meshRef.current.position.x = position[0] + floatX + cursorPushX;
+    meshRef.current.position.y = position[1] + floatY + cursorPushY;
+    meshRef.current.position.z = position[2] + floatZ;
+
+    // Subtle scale pulse
+    const pulse = 1 + Math.sin(t * 0.6 + phase) * 0.06;
+    meshRef.current.scale.setScalar(pulse);
   });
 
   return (
@@ -25,9 +66,7 @@ function Shape({ geometry, position, color, speed = 0.3, floatSpeed = 1 }) {
 
 /**
  * FloatingShapes — full-screen R3F canvas with rotating wireframe geometries.
- * Props:
- *  - count (number) — how many shapes
- *  - className — container class
+ * Now with continuous animation + cursor parallax influence.
  */
 export default function FloatingShapes({ count = 6, className = "" }) {
   const shapes = useMemo(() => {
@@ -63,9 +102,11 @@ export default function FloatingShapes({ count = 6, className = "" }) {
         gl={{ alpha: true, antialias: true }}
       >
         <ambientLight intensity={0.5} />
+        <CursorListener />
         {shapes.map((s) => (
           <Shape
             key={s.key}
+            index={s.key}
             geometry={s.geometry}
             position={s.position}
             color={s.color}

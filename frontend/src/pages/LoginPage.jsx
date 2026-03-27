@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { Mail, Lock, LogIn, Sparkles, Eye, EyeOff } from "lucide-react";
 import FloatingShapes from "../components/3d/FloatingShapes";
 import ParticleField from "../components/3d/ParticleField";
@@ -10,6 +11,8 @@ import CursorGlow from "../components/3d/CursorGlow";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,10 +25,11 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      login(email, password);
+      await login(email, password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message);
+      const msg = err.response?.data?.detail || err.message || "Failed to log in";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -33,32 +37,26 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4">
-      {/* ── 3D Background Layers ─────────────────────────── */}
+      {/* ── Background Layers ─────────────────────────── */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-surface-950" />
-        {/* Gradient orbs */}
+        <div className={`absolute inset-0 ${isDark ? "bg-surface-950" : "bg-surface-light-50"}`} />
         <motion.div
-          className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-accent/20 to-blue-600/10 blur-3xl"
+          className={`absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-3xl ${isDark ? "bg-gradient-to-br from-accent/20 to-blue-600/10" : "bg-gradient-to-br from-accent/10 to-blue-400/5"}`}
           animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-blue-500/15 to-purple-600/10 blur-3xl"
+          className={`absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full blur-3xl ${isDark ? "bg-gradient-to-tr from-blue-500/15 to-purple-600/10" : "bg-gradient-to-tr from-blue-400/8 to-purple-400/5"}`}
           animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
-      {/* 3D Floating shapes */}
       <FloatingShapes count={8} className="-z-5" />
-
-      {/* Particle field */}
       <ParticleField className="-z-5 opacity-60" />
+      <CursorGlow size={600} color={isDark ? "rgba(124,92,252,0.08)" : "rgba(124,92,252,0.04)"} />
 
-      {/* Cursor glow */}
-      <CursorGlow size={600} color="rgba(124,92,252,0.08)" />
-
-      {/* ── Login Card with 3D Tilt ──────────────────────── */}
+      {/* ── Login Card ──────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -66,7 +64,11 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <TiltCard tiltIntensity={8} className="group">
-          <div className="bg-surface-800/50 backdrop-blur-2xl border border-white/[0.08] rounded-3xl shadow-2xl shadow-black/40 p-8">
+          <div className={`backdrop-blur-2xl border rounded-3xl shadow-2xl p-8 ${
+            isDark
+              ? "bg-surface-800/50 border-white/[0.08] shadow-black/40"
+              : "bg-white/70 border-surface-light-300/40 shadow-accent/5"
+          }`}>
             {/* Logo */}
             <motion.div
               className="flex flex-col items-center mb-8"
@@ -79,8 +81,8 @@ export default function LoginPage() {
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-extrabold text-white tracking-tight">Welcome Back</h1>
-              <p className="text-gray-400 text-sm mt-1">Sign in to your Meeting Intelligence account</p>
+              <h1 className={`text-2xl font-extrabold tracking-tight ${isDark ? "text-white" : "text-gray-800"}`}>Welcome Back</h1>
+              <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>Sign in to your Meeting Intelligence account</p>
             </motion.div>
 
             {/* Error */}
@@ -149,12 +151,12 @@ export default function LoginPage() {
             </form>
 
             <div className="flex items-center gap-4 my-6">
-              <div className="flex-1 h-px bg-white/[0.06]" />
-              <span className="text-xs text-gray-500 uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-white/[0.06]" />
+              <div className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-surface-light-300/40"}`} />
+              <span className={`text-xs uppercase tracking-wider ${isDark ? "text-gray-500" : "text-gray-400"}`}>or</span>
+              <div className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-surface-light-300/40"}`} />
             </div>
 
-            <p className="text-center text-sm text-gray-400">
+            <p className={`text-center text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Don&apos;t have an account?{" "}
               <Link to="/signup" className="text-accent hover:text-accent-light font-semibold transition-colors">
                 Create new account

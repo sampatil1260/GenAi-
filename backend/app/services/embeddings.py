@@ -6,6 +6,7 @@ Responsibilities:
   - Encode chunks as dense vectors
   - Store and retrieve vectors via FAISS
   - Persist index to disk for durability
+  - Filter search results by user_id for data isolation
 """
 
 import os
@@ -42,7 +43,13 @@ class EmbeddingService:
 
     # ── Public API ───────────────────────────────────────────────
 
-    def add_meeting(self, meeting_id: str, meeting_title: str, text: str):
+    def add_meeting(
+        self,
+        meeting_id: str,
+        meeting_title: str,
+        text: str,
+        user_id: str = "",
+    ):
         """Chunk, embed, and index a meeting transcript."""
         chunks = self._chunk_text(text, chunk_size=500, overlap=100)
         if not chunks:
@@ -60,16 +67,23 @@ class EmbeddingService:
                 "meeting_id": meeting_id,
                 "meeting_title": meeting_title,
                 "chunk": chunk,
+                "user_id": user_id,
             })
 
         self.save_index()
         logger.info(
-            f"Indexed {len(chunks)} chunks for meeting '{meeting_title}'"
+            f"Indexed {len(chunks)} chunks for meeting '{meeting_title}' (user={user_id})"
         )
 
-    def search(self, query: str, top_k: int = 5) -> list[dict]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        user_id: Optional[str] = None,
+    ) -> list[dict]:
         """
         Find the most relevant transcript chunks for a query.
+        If user_id is provided, only return results belonging to that user.
 
         Returns list of dicts with: meeting_id, meeting_title, chunk, score
         """
@@ -80,19 +94,29 @@ class EmbeddingService:
             [query], normalize_embeddings=True
         ).astype("float32")
 
-        scores, indices = self.index.search(query_embedding, min(top_k, self.index.ntotal))
+        # Search more candidates to compensate for user_id filtering
+        search_k = min(top_k * 5, self.index.ntotal)
+        scores, indices = self.index.search(query_embedding, search_k)
 
         results = []
         for score, idx in zip(scores[0], indices[0]):
             if idx < 0 or idx >= len(self.metadata):
                 continue
             meta = self.metadata[idx]
+
+            # Filter by user_id if provided
+            if user_id and meta.get("user_id") and meta["user_id"] != user_id:
+                continue
+
             results.append({
                 "meeting_id": meta["meeting_id"],
                 "meeting_title": meta["meeting_title"],
                 "chunk": meta["chunk"],
                 "score": float(score),
             })
+
+            if len(results) >= top_k:
+                break
 
         return results
 
@@ -123,7 +147,6 @@ class EmbeddingService:
     def _chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list[str]:
         """
         Split text into overlapping chunks for embedding.
-
         Uses word boundaries to avoid cutting mid-word.
         """
         words = text.split()

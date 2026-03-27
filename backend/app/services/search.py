@@ -3,12 +3,13 @@ Retrieval-Augmented Generation (RAG) search service.
 
 Pipeline:
   1. User asks a question
-  2. EmbeddingService finds relevant transcript chunks via FAISS
+  2. EmbeddingService finds relevant transcript chunks via FAISS (filtered by user_id)
   3. Chunks + question are sent to the LLM
   4. LLM generates a grounded answer
 """
 
 import logging
+from typing import Optional
 from uuid import UUID
 
 import openai
@@ -49,16 +50,24 @@ class RAGSearchService:
                 base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
             )
 
-    def search(self, query: str, top_k: int, db: Session) -> list[SearchResult]:
+    def search(
+        self,
+        query: str,
+        top_k: int,
+        db: Session,
+        user_id: Optional[str] = None,
+    ) -> list[SearchResult]:
         """
-        Execute a RAG search:
-          1. Retrieve relevant chunks from FAISS
+        Execute a RAG search scoped to a specific user:
+          1. Retrieve relevant chunks from FAISS (filtered by user_id)
           2. Build context from chunks
           3. Ask LLM for an answer
           4. Return results with the answer attached to the top result
         """
-        # ── Step 1: Vector search ────────────────────────────────
-        chunks = self.embedding_service.search(query, top_k=top_k)
+        # ── Step 1: Vector search (user-scoped) ──────────────────
+        chunks = self.embedding_service.search(
+            query, top_k=top_k, user_id=user_id
+        )
         if not chunks:
             return []
 
@@ -98,9 +107,9 @@ class RAGSearchService:
                     meeting_title=chunk["meeting_title"],
                     relevant_chunk=chunk["chunk"],
                     similarity_score=chunk["score"],
-                    answer=answer if i == 0 else None,  # attach answer to top result
+                    answer=answer if i == 0 else None,
                 )
             )
 
-        logger.info(f"RAG search: query='{query}', results={len(results)}")
+        logger.info(f"RAG search: query='{query}', results={len(results)}, user={user_id}")
         return results
