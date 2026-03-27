@@ -1,4 +1,4 @@
-# 🎙️ AI Meeting Intelligence System
+## 🎙️ AI Meeting Intelligence System
 
 An AI-powered meeting assistant that transcribes, summarizes, extracts action items, and enables semantic search across your meeting history.
 
